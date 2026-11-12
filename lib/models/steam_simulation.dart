@@ -9,6 +9,7 @@ class SteamSimulation extends ChangeNotifier {
   static const double nominalBoilerPressureBar = 3.2;
   static const double maximumBoilerPressureBar = 8.0;
   static const double maximumBoilerThermalPowerKw = 220.0;
+  static const double ambientTemperatureC = 18.0;
   static const double distributionCapacityKgPerHour = 420.0;
   static const double condensateBoxCapacityKg = 250.0;
   static const double warmTankCapacityKg = 600.0;
@@ -285,11 +286,11 @@ class SteamSimulation extends ChangeNotifier {
     _updateSafetyValveLatch();
 
     final heatInputKw = heaterThermalPowerKw;
-    final heatLossKw =
-        _heaterHeatLossKwPerC * math.max(_heaterTemperature - 18, 0);
+    final heatLossKw = _heaterHeatLossKwPerC *
+        math.max(_heaterTemperature - ambientTemperatureC, 0);
     _heaterTemperature = (_heaterTemperature +
             (heatInputKw - heatLossKw) / _heaterThermalCapacityKjPerC * seconds)
-        .clamp(18, 110)
+        .clamp(ambientTemperatureC, 110)
         .toDouble();
 
     final generatedCondensateKg =
