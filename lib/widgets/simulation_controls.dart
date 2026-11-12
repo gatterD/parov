@@ -66,9 +66,13 @@ class SimulationControls extends StatelessWidget {
           const SizedBox(height: 24),
           const _SectionLabel('ПАРОВОЙ КОТЁЛ'),
           _ParameterSlider(
-            label: 'Производительность',
+            label: 'Мощность котла',
             value: simulation.boilerOutput,
-            displayValue: '${simulation.boilerOutput.toStringAsFixed(0)}%',
+            displayValue:
+                '${simulation.boilerThermalPowerKw.toStringAsFixed(0)} кВт',
+            description:
+                'Нагрузка ${simulation.boilerOutput.toStringAsFixed(0)}% '
+                'от номинала',
             min: 20,
             max: 100,
             onChanged: simulation.setBoilerOutput,
@@ -76,35 +80,39 @@ class SimulationControls extends StatelessWidget {
           const SizedBox(height: 17),
           const _SectionLabel('АРМАТУРА И ОТОПЛЕНИЕ'),
           _ParameterSlider(
-            label: 'Редукционный клапан · уставка',
+            label: 'Редуктор · уставка выходного давления',
             value: simulation.regulatorSetting,
             displayValue:
                 '${simulation.regulatorSetting.toStringAsFixed(1)} бар',
+            description: 'Клапан поддерживает это давление после редуктора',
             min: 1,
             max: 4.5,
             divisions: 35,
             onChanged: simulation.setRegulatorSetting,
           ),
           _ParameterSlider(
-            label: 'Клапан 8 · подача в грелки',
+            label: 'Клапан 8 · подача пара в грелки',
             value: simulation.inletValve,
             displayValue: '${simulation.inletValve.toStringAsFixed(0)}%',
+            description: 'Регулирует расход пара на отопление',
             min: 0,
             max: 100,
             onChanged: simulation.setInletValve,
           ),
           _ParameterSlider(
-            label: 'Клапан 10 · выход из грелок',
+            label: 'Клапан 10 · отвод из грелок',
             value: simulation.outletValve,
             displayValue: '${simulation.outletValve.toStringAsFixed(0)}%',
+            description: 'Регулирует отвод конденсата из грелок',
             min: 0,
             max: 100,
             onChanged: simulation.setOutletValve,
           ),
           _ParameterSlider(
-            label: 'Клапан 13 · отвод конденсата',
+            label: 'Клапан 13 · возврат конденсата',
             value: simulation.drainValve,
             displayValue: '${simulation.drainValve.toStringAsFixed(0)}%',
+            description: 'Регулирует работу конденсатоотводчика в тёплый ящик',
             min: 0,
             max: 100,
             onChanged: simulation.setDrainValve,
@@ -127,41 +135,121 @@ class SimulationControls extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          const _SectionLabel('ТЕКУЩИЕ ПАРАМЕТРЫ'),
+          const SizedBox(height: 10),
+          _ReadoutRow(
+            icon: Icons.speed,
+            label: 'Давление на входе редуктора · котёл',
+            value: '${simulation.boilerPressure.toStringAsFixed(2)} бар',
+            color: simulation.boilerOverpressure
+                ? AppColors.danger
+                : AppColors.steam,
+          ),
+          const SizedBox(height: 9),
+          _ReadoutRow(
+            icon: Icons.tune,
+            label: 'Давление на выходе редуктора',
+            value: '${simulation.workingPressure.toStringAsFixed(2)} бар',
+            color: simulation.downstreamOverpressure
+                ? AppColors.danger
+                : AppColors.steam,
+          ),
+          const SizedBox(height: 9),
           _ReadoutRow(
             icon: Icons.air,
-            label: 'Качество осушенного пара',
+            label: 'Расход пара в отопительную магистраль',
+            value: '${simulation.steamFlowKgPerHour.toStringAsFixed(0)} кг/ч',
+            color: AppColors.steam,
+          ),
+          const SizedBox(height: 9),
+          _ReadoutRow(
+            icon: Icons.water_drop_outlined,
+            label: 'Степень сухости после сепаратора',
             value: '${simulation.steamQuality.toStringAsFixed(0)}%',
             color: AppColors.water,
           ),
           const SizedBox(height: 9),
           _ReadoutRow(
-            icon: Icons.opacity,
-            label: 'Уровень конденсата',
-            value: '${(simulation.condensateLevel * 100).toStringAsFixed(0)}%',
+            icon: Icons.thermostat,
+            label: 'Температура грелок',
+            value: '${simulation.heaterTemperature.toStringAsFixed(1)} °C',
             color: AppColors.water,
           ),
-          if (simulation.safetyValveOpen) ...[
+          const SizedBox(height: 9),
+          _ReadoutRow(
+            icon: Icons.device_thermostat,
+            label: 'Температура окружающей среды',
+            value:
+                '${SteamSimulation.ambientTemperatureC.toStringAsFixed(0)} °C',
+            color: AppColors.muted,
+          ),
+          const SizedBox(height: 9),
+          _ReadoutRow(
+            icon: Icons.opacity,
+            label: 'Конденсатная коробка',
+            value: '${(simulation.condensateLevel * 100).toStringAsFixed(0)}%',
+            color: simulation.condensateLevel >= 0.8
+                ? AppColors.danger
+                : AppColors.water,
+          ),
+          const SizedBox(height: 9),
+          _ReadoutRow(
+            icon: Icons.water,
+            label: 'Конденсат в грелках',
+            value:
+                '${(simulation.heaterCondensateLevel * 100).toStringAsFixed(0)}%',
+            color: simulation.heaterCondensateLevel >= 0.8
+                ? AppColors.danger
+                : AppColors.water,
+          ),
+          const SizedBox(height: 9),
+          _ReadoutRow(
+            icon: Icons.inventory_2_outlined,
+            label: 'Тёплый ящик',
+            value: '${(simulation.warmTankLevel * 100).toStringAsFixed(0)}%',
+            color: simulation.warmTankLevel >= 0.9
+                ? AppColors.danger
+                : AppColors.water,
+          ),
+          if (simulation.condensateLevel >= 0.8 ||
+              simulation.heaterCondensateLevel >= 0.8 ||
+              simulation.warmTankLevel >= 0.9) ...[
             const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.danger.withValues(alpha: .1),
-                borderRadius: BorderRadius.circular(8),
-                border:
-                    Border.all(color: AppColors.danger.withValues(alpha: .3)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.warning_amber_rounded,
-                      color: AppColors.danger, size: 18),
-                  SizedBox(width: 9),
-                  Expanded(
-                    child: Text('Сброс пара: давление котла выше 6 бар',
-                        style:
-                            TextStyle(color: AppColors.danger, fontSize: 12)),
-                  ),
-                ],
-              ),
+            _WarningBanner(
+              message: simulation.condensateOverflow
+                  ? 'Переполнение: проверьте отвод конденсата'
+                  : 'Критический уровень конденсата — проверьте клапаны 10 и 13',
+            ),
+          ],
+          if (simulation.workingPressure < 1.0 &&
+              !simulation.reducerFailed) ...[
+            const SizedBox(height: 10),
+            const _WarningBanner(
+              message: 'Недостаточное давление пара в отопительной магистрали',
+            ),
+          ],
+          if (simulation.reducerFailed) ...[
+            const SizedBox(height: 10),
+            const _WarningBanner(
+              message: 'Авария: отказ редуктора — давление не регулируется',
+            ),
+          ],
+          if (simulation.downstreamOverpressure) ...[
+            const SizedBox(height: 10),
+            const _WarningBanner(
+              message: 'Авария: повышенное давление после редуктора',
+            ),
+          ],
+          if (simulation.safetyValveOpen) ...[
+            const SizedBox(height: 10),
+            const _WarningBanner(
+              message: 'Аварийный сброс пара: предохранительный клапан открыт',
+            ),
+          ],
+          if (simulation.boilerOverpressure) ...[
+            const SizedBox(height: 10),
+            const _WarningBanner(
+              message: 'Авария: достигнуто максимальное давление котла',
             ),
           ],
         ],
@@ -170,9 +258,14 @@ class SimulationControls extends StatelessWidget {
   }
 
   String _formatTime(int seconds) {
-    final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
-    final remainder = (seconds % 60).toString().padLeft(2, '0');
-    return '$minutes:$remainder';
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+    final remainder = seconds % 60;
+    final formattedMinutes = minutes.toString().padLeft(2, '0');
+    final formattedSeconds = remainder.toString().padLeft(2, '0');
+    if (hours == 0) return '$formattedMinutes:$formattedSeconds';
+    return '${hours.toString().padLeft(2, '0')}:'
+        '$formattedMinutes:$formattedSeconds';
   }
 }
 
@@ -184,6 +277,7 @@ class _ParameterSlider extends StatelessWidget {
     required this.min,
     required this.max,
     required this.onChanged,
+    this.description,
     this.divisions,
   });
 
@@ -194,6 +288,7 @@ class _ParameterSlider extends StatelessWidget {
   final double max;
   final int? divisions;
   final ValueChanged<double> onChanged;
+  final String? description;
 
   @override
   Widget build(BuildContext context) {
@@ -219,7 +314,46 @@ class _ParameterSlider extends StatelessWidget {
           divisions: divisions,
           onChanged: onChanged,
         ),
+        if (description != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              description!,
+              style: const TextStyle(color: AppColors.muted, fontSize: 10),
+            ),
+          ),
       ],
+    );
+  }
+}
+
+class _WarningBanner extends StatelessWidget {
+  const _WarningBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: .1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.danger.withValues(alpha: .3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded,
+              color: AppColors.danger, size: 18),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: AppColors.danger, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
