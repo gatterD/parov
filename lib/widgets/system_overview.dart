@@ -94,98 +94,200 @@ class _HorizontalDiagram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nodes = [
-      _ProcessNode(
-        icon: Icons.local_fire_department,
-        title: 'Котёл',
-        subtitle: '${simulation.boilerPressure.toStringAsFixed(1)} бар',
-        color: simulation.safetyValveOpen ? AppColors.danger : AppColors.steam,
-        active: simulation.isRunning,
-      ),
-      _ProcessNode(
-        icon: Icons.tune,
-        title: 'Клапаны',
-        subtitle:
-            simulation.reducerFailed ? 'Отказ редуктора' : 'Редукция · защита',
-        color: simulation.reducerFailed ? AppColors.danger : AppColors.steam,
-        active: simulation.isRunning,
-      ),
-      _ProcessNode(
-        icon: Icons.water_drop_outlined,
-        title: 'Сепаратор',
-        subtitle: 'Сухость ${simulation.steamQuality.toStringAsFixed(0)}%',
-        color: AppColors.water,
-        active: simulation.isRunning,
-      ),
-      _ProcessNode(
-        icon: Icons.hub_outlined,
-        title: 'Распределение',
-        subtitle: '${simulation.steamFlow.toStringAsFixed(0)}% потока',
-        color: AppColors.steam,
-        active: simulation.isRunning,
-      ),
-      _ProcessNode(
-        icon: Icons.radar,
-        title: 'Грелки',
-        subtitle: '${simulation.heaterTemperature.toStringAsFixed(0)} °C',
-        color: AppColors.water,
-        active: simulation.isRunning && simulation.steamFlow > 0,
-      ),
-    ];
+    const diagramWidth = 1050.0;
+    final steamIntensity = simulation.steamFlowKgPerHour /
+        SteamSimulation.distributionCapacityKgPerHour;
+    final condensateIntensity = simulation.returnFlowKgPerHour / 220;
 
-    return Column(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              for (var index = 0; index < nodes.length; index++) ...[
-                Expanded(child: nodes[index]),
-                if (index < nodes.length - 1)
-                  _FlowArrow(
-                    color:
-                        simulation.isRunning ? AppColors.steam : Colors.white24,
-                    animated: simulation.isRunning,
-                  ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SizedBox(
+        width: diagramWidth,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _BranchLabel(
+              label:
+                  'ПАР · ${simulation.steamFlowKgPerHour.toStringAsFixed(0)} кг/ч',
+              color: AppColors.steam,
+            ),
+            Row(
+              children: [
+                _ProcessNode(
+                  icon: Icons.local_fire_department,
+                  title: 'Котёл',
+                  subtitle:
+                      '${simulation.boilerPressure.toStringAsFixed(1)} бар',
+                  color: simulation.boilerOverpressure
+                      ? AppColors.danger
+                      : AppColors.steam,
+                  active: steamIntensity > 0,
+                ),
+                _FlowArrow(flow: steamIntensity, color: AppColors.steam),
+                _ProcessNode(
+                  icon: Icons.tune,
+                  title: 'Редукционный клапан',
+                  subtitle: simulation.reducerFailed
+                      ? 'Авария · открыт'
+                      : '${simulation.boilerPressure.toStringAsFixed(1)} → '
+                          '${simulation.workingPressure.toStringAsFixed(1)} бар',
+                  color: simulation.reducerFailed
+                      ? AppColors.danger
+                      : AppColors.steam,
+                  active: steamIntensity > 0,
+                ),
+                _FlowArrow(flow: steamIntensity, color: AppColors.steam),
+                _ProcessNode(
+                  icon: Icons.water_drop_outlined,
+                  title: 'Сепаратор',
+                  subtitle:
+                      'Сухость ${simulation.steamQuality.toStringAsFixed(0)}%',
+                  color: AppColors.water,
+                  active: steamIntensity > 0,
+                ),
+                _FlowArrow(flow: steamIntensity, color: AppColors.steam),
+                _ProcessNode(
+                  icon: Icons.hub_outlined,
+                  title: 'Распределительная коробка',
+                  subtitle:
+                      '${simulation.steamFlowKgPerHour.toStringAsFixed(0)} кг/ч',
+                  color: AppColors.steam,
+                  active: steamIntensity > 0,
+                ),
+                _FlowArrow(flow: steamIntensity, color: AppColors.steam),
+                _ProcessNode(
+                  icon: Icons.settings,
+                  title: 'Клапан 8',
+                  subtitle:
+                      'Подача · ${simulation.inletValve.toStringAsFixed(0)}%',
+                  color: AppColors.steam,
+                  active: steamIntensity > 0,
+                ),
+                _FlowArrow(flow: steamIntensity, color: AppColors.steam),
+                _ProcessNode(
+                  icon: Icons.radar,
+                  title: 'Грелки',
+                  subtitle:
+                      '${simulation.heaterTemperature.toStringAsFixed(0)} °C',
+                  color: AppColors.water,
+                  active: steamIntensity > 0,
+                ),
               ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            const SizedBox(width: 12),
-            Expanded(
-              child: Container(
-                height: 2,
-                color: simulation.isRunning && simulation.returnFlow > 1
-                    ? AppColors.water
-                    : Colors.white12,
-              ),
             ),
-            const SizedBox(width: 8),
-            Icon(Icons.south,
-                size: 15, color: AppColors.water.withValues(alpha: .9)),
-            const SizedBox(width: 8),
-            Text(
-              'Конденсат · ${simulation.returnFlow.toStringAsFixed(0)}%',
-              style: const TextStyle(color: AppColors.water, fontSize: 12),
+            _BranchLabel(
+              label: 'ВЕТВЬ ПРЕДОХРАНИТЕЛЬНОГО СБРОСА',
+              color: simulation.safetyValveOpen
+                  ? AppColors.danger
+                  : AppColors.muted,
             ),
-            const SizedBox(width: 12),
-          ],
-        ),
-        const SizedBox(height: 13),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Грелки → конденсатная коробка → клапан 13 → тёплый ящик',
-              style: TextStyle(color: AppColors.muted, fontSize: 11),
+            Row(
+              children: [
+                _ProcessNode(
+                  icon: Icons.local_fire_department,
+                  title: 'Отбор от котла',
+                  subtitle: 'Открытие при 6.0 бар',
+                  color: AppColors.muted,
+                  active: simulation.safetyValveOpen,
+                ),
+                _FlowArrow(
+                  flow: simulation.safetyValveDischargeKgPerHour / 700,
+                  color: AppColors.danger,
+                ),
+                _ProcessNode(
+                  icon: Icons.emergency,
+                  title: 'Предохранительный клапан',
+                  subtitle: simulation.safetyValveOpen
+                      ? 'Открыт · сброс пара'
+                      : 'Закрыт · сброс при 6.0 бар',
+                  color: simulation.safetyValveOpen
+                      ? AppColors.danger
+                      : AppColors.muted,
+                  active: simulation.safetyValveOpen,
+                ),
+                _FlowArrow(
+                  flow: simulation.safetyValveDischargeKgPerHour / 700,
+                  color: AppColors.danger,
+                ),
+                _ProcessNode(
+                  icon: Icons.north_east,
+                  title: 'Сброс пара',
+                  subtitle: simulation.safetyValveOpen
+                      ? '${simulation.safetyValveDischargeKgPerHour.toStringAsFixed(0)} кг/ч'
+                      : 'Закрытие при 5.7 бар',
+                  color: simulation.safetyValveOpen
+                      ? AppColors.danger
+                      : AppColors.muted,
+                  active: simulation.safetyValveOpen,
+                ),
+              ],
+            ),
+            _BranchLabel(
+              label: 'ВОЗВРАТ КОНДЕНСАТА · '
+                  '${simulation.returnFlowKgPerHour.toStringAsFixed(0)} кг/ч',
+              color: AppColors.water,
+            ),
+            Row(
+              children: [
+                _ProcessNode(
+                  icon: Icons.radar,
+                  title: 'Выход грелок',
+                  subtitle: 'Конденсат '
+                      '${(simulation.heaterCondensateLevel * 100).toStringAsFixed(0)}%',
+                  color: AppColors.water,
+                  active: condensateIntensity > 0,
+                ),
+                _FlowArrow(flow: condensateIntensity, color: AppColors.water),
+                _ProcessNode(
+                  icon: Icons.settings,
+                  title: 'Клапан 10',
+                  subtitle:
+                      'Отвод · ${simulation.outletValve.toStringAsFixed(0)}%',
+                  color: AppColors.water,
+                  active: condensateIntensity > 0,
+                ),
+                _FlowArrow(flow: condensateIntensity, color: AppColors.water),
+                _ProcessNode(
+                  icon: Icons.inbox_outlined,
+                  title: 'Конденсатная коробка',
+                  subtitle:
+                      'Уровень ${(simulation.condensateLevel * 100).toStringAsFixed(0)}%',
+                  color: AppColors.water,
+                  active: condensateIntensity > 0,
+                ),
+                _FlowArrow(flow: condensateIntensity, color: AppColors.water),
+                _ProcessNode(
+                  icon: Icons.settings,
+                  title: 'Клапан 13',
+                  subtitle:
+                      'Возврат · ${simulation.drainValve.toStringAsFixed(0)}%',
+                  color: AppColors.water,
+                  active: condensateIntensity > 0,
+                ),
+                _FlowArrow(flow: condensateIntensity, color: AppColors.water),
+                _ProcessNode(
+                  icon: Icons.water,
+                  title: 'Конденсатоотводчик',
+                  subtitle:
+                      '${simulation.returnFlowKgPerHour.toStringAsFixed(0)} кг/ч',
+                  color: AppColors.water,
+                  active: condensateIntensity > 0,
+                ),
+                _FlowArrow(flow: condensateIntensity, color: AppColors.water),
+                _ProcessNode(
+                  icon: Icons.inventory_2_outlined,
+                  title: 'Тёплый ящик',
+                  subtitle:
+                      'Уровень ${(simulation.warmTankLevel * 100).toStringAsFixed(0)}%',
+                  color: AppColors.water,
+                  active: condensateIntensity > 0,
+                ),
+              ],
             ),
             if (simulation.safetyValveOpen)
               const StatusTag(label: 'СБРОС ПАРА', color: AppColors.danger),
           ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -197,77 +299,192 @@ class _VerticalDiagram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stages = [
-      (
-        '01',
-        'Паровой котёл',
-        '${simulation.boilerPressure.toStringAsFixed(1)} бар',
-        Icons.local_fire_department,
-        simulation.safetyValveOpen ? AppColors.danger : AppColors.steam,
-      ),
-      (
-        '02',
-        'Редукционный и предохранительный клапаны',
-        simulation.reducerFailed
-            ? 'Отказ редуктора'
-            : 'Рабочее давление ${simulation.workingPressure.toStringAsFixed(1)} бар',
-        Icons.tune,
-        simulation.reducerFailed || simulation.safetyValveOpen
-            ? AppColors.danger
-            : AppColors.steam,
-      ),
-      (
-        '03',
-        'Сепаратор и распределительная коробка',
-        'Осушение пара · качество ${simulation.steamQuality.toStringAsFixed(0)}%',
-        Icons.water_drop_outlined,
-        AppColors.water,
-      ),
-      (
-        '04',
-        'Отопительная магистраль → грелки',
-        'Клапан 8: ${simulation.inletValve.toStringAsFixed(0)}% · ${simulation.heaterTemperature.toStringAsFixed(0)} °C',
-        Icons.device_thermostat,
-        AppColors.steam,
-      ),
-      (
-        '05',
-        'Конденсатная коробка → тёплый ящик',
-        'Клапан 13 · возврат ${simulation.returnFlow.toStringAsFixed(0)}%',
-        Icons.water,
-        AppColors.water,
-      ),
-    ];
+    final steamIntensity = simulation.steamFlowKgPerHour /
+        SteamSimulation.distributionCapacityKgPerHour;
+    final condensateIntensity = simulation.returnFlowKgPerHour / 220;
 
-    return Column(
-      children: [
-        for (var index = 0; index < stages.length; index++) ...[
-          Expanded(
-            child: _VerticalStage(
-              number: stages[index].$1,
-              title: stages[index].$2,
-              subtitle: stages[index].$3,
-              icon: stages[index].$4,
-              color: stages[index].$5,
-              active: simulation.isRunning,
-            ),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _VerticalStage(
+            number: '01',
+            title: 'Паровой котёл',
+            subtitle: '${simulation.boilerPressure.toStringAsFixed(1)} бар',
+            icon: Icons.local_fire_department,
+            color: simulation.boilerOverpressure
+                ? AppColors.danger
+                : AppColors.steam,
+            active: steamIntensity > 0,
           ),
-          if (index < stages.length - 1)
-            SizedBox(
-              height: 13,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  margin: const EdgeInsets.only(left: 19),
-                  width: 2,
-                  color: simulation.isRunning
-                      ? (index == 3 ? AppColors.water : AppColors.steam)
-                      : Colors.white12,
+          const _BranchLabel(
+            label: 'ОТ КОТЛА: ПАРОВАЯ МАГИСТРАЛЬ И ВЕТВЬ СБРОСА',
+            color: AppColors.muted,
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    _FlowArrow(
+                      flow: steamIntensity,
+                      color: AppColors.steam,
+                      vertical: true,
+                    ),
+                    _VerticalStage(
+                      number: '02',
+                      title: 'Редуктор',
+                      subtitle: simulation.reducerFailed
+                          ? 'Отказ · выход '
+                              '${simulation.boilerPressure.toStringAsFixed(1)} бар'
+                          : '${simulation.boilerPressure.toStringAsFixed(1)} → '
+                              '${simulation.workingPressure.toStringAsFixed(1)} бар',
+                      icon: Icons.tune,
+                      color: simulation.reducerFailed
+                          ? AppColors.danger
+                          : AppColors.steam,
+                      active: steamIntensity > 0,
+                    ),
+                  ],
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  children: [
+                    _ProcessNode(
+                      icon: Icons.emergency,
+                      title: 'Предохранительный клапан',
+                      subtitle: simulation.safetyValveOpen
+                          ? 'Открыт · '
+                              '${simulation.safetyValveDischargeKgPerHour.toStringAsFixed(0)} кг/ч'
+                          : 'Открытие 6.0 · закрытие 5.7 бар',
+                      color: simulation.safetyValveOpen
+                          ? AppColors.danger
+                          : AppColors.muted,
+                      active: simulation.safetyValveOpen,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _FlowArrow(
+                          flow: simulation.safetyValveDischargeKgPerHour / 700,
+                          color: AppColors.danger,
+                        ),
+                        const Flexible(
+                          child: Text(
+                            'Сброс пара',
+                            style: TextStyle(
+                                color: AppColors.danger, fontSize: 10),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          _FlowArrow(
+            flow: steamIntensity,
+            color: AppColors.steam,
+            vertical: true,
+          ),
+          _VerticalStage(
+            number: '03',
+            title: 'Сепаратор и распределительная коробка',
+            subtitle:
+                'Сухость ${simulation.steamQuality.toStringAsFixed(0)}% · '
+                '${simulation.steamFlowKgPerHour.toStringAsFixed(0)} кг/ч',
+            icon: Icons.water_drop_outlined,
+            color: AppColors.water,
+            active: steamIntensity > 0,
+          ),
+          _FlowArrow(
+            flow: steamIntensity,
+            color: AppColors.steam,
+            vertical: true,
+          ),
+          _VerticalStage(
+            number: '03',
+            title: 'Отопительная магистраль · клапан 8',
+            subtitle: 'Подача ${simulation.inletValve.toStringAsFixed(0)}% · '
+                '${simulation.steamFlowKgPerHour.toStringAsFixed(0)} кг/ч',
+            icon: Icons.settings,
+            color: AppColors.steam,
+            active: steamIntensity > 0,
+          ),
+          _FlowArrow(
+            flow: steamIntensity,
+            color: AppColors.steam,
+            vertical: true,
+          ),
+          _VerticalStage(
+            number: '04',
+            title: 'Грелки',
+            subtitle: '${simulation.heaterTemperature.toStringAsFixed(0)} °C',
+            icon: Icons.device_thermostat,
+            color: AppColors.water,
+            active: steamIntensity > 0,
+          ),
+          _FlowArrow(
+            flow: condensateIntensity,
+            color: AppColors.water,
+            vertical: true,
+          ),
+          _VerticalStage(
+            number: '05',
+            title: 'Клапан 10 · выход из грелок',
+            subtitle: 'Открытие ${simulation.outletValve.toStringAsFixed(0)}%',
+            icon: Icons.settings,
+            color: AppColors.water,
+            active: condensateIntensity > 0,
+          ),
+          _FlowArrow(
+            flow: condensateIntensity,
+            color: AppColors.water,
+            vertical: true,
+          ),
+          _VerticalStage(
+            number: '06',
+            title: 'Конденсатная коробка',
+            subtitle:
+                'Уровень ${(simulation.condensateLevel * 100).toStringAsFixed(0)}%',
+            icon: Icons.inbox_outlined,
+            color: AppColors.water,
+            active: condensateIntensity > 0,
+          ),
+          _FlowArrow(
+            flow: condensateIntensity,
+            color: AppColors.water,
+            vertical: true,
+          ),
+          _VerticalStage(
+            number: '07',
+            title: 'Клапан 13 · конденсатоотводчик',
+            subtitle: 'Клапан ${simulation.drainValve.toStringAsFixed(0)}% · '
+                '${simulation.returnFlowKgPerHour.toStringAsFixed(0)} кг/ч',
+            icon: Icons.settings,
+            color: AppColors.water,
+            active: condensateIntensity > 0,
+          ),
+          _FlowArrow(
+            flow: condensateIntensity,
+            color: AppColors.water,
+            vertical: true,
+          ),
+          _VerticalStage(
+            number: '08',
+            title: 'Тёплый ящик',
+            subtitle:
+                'Уровень ${(simulation.warmTankLevel * 100).toStringAsFixed(0)}%',
+            icon: Icons.inventory_2_outlined,
+            color: AppColors.water,
+            active: condensateIntensity > 0,
+          ),
         ],
-      ],
+      ),
     );
   }
 }
@@ -323,16 +540,74 @@ class _ProcessNode extends StatelessWidget {
 }
 
 class _FlowArrow extends StatelessWidget {
-  const _FlowArrow({required this.color, required this.animated});
+  const _FlowArrow({
+    required this.flow,
+    required this.color,
+    this.vertical = false,
+  });
 
+  final double flow;
   final Color color;
-  final bool animated;
+  final bool vertical;
 
   @override
   Widget build(BuildContext context) {
+    final intensity = flow.clamp(0, 1).toDouble();
+    final visibleColor = color.withValues(alpha: .18 + .82 * intensity);
+    final thickness = 1.5 + 3 * intensity;
+
     return SizedBox(
-      width: 25,
-      child: Icon(Icons.chevron_right, color: color, size: animated ? 23 : 18),
+      width: vertical ? 32 : 25,
+      height: vertical ? 26 : null,
+      child: vertical
+          ? Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: thickness,
+                  height: 7,
+                  color: visibleColor,
+                ),
+                Icon(Icons.keyboard_arrow_down, color: visibleColor, size: 18),
+              ],
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 8,
+                  height: thickness,
+                  color: visibleColor,
+                ),
+                Icon(Icons.chevron_right, color: visibleColor, size: 18),
+              ],
+            ),
+    );
+  }
+}
+
+class _BranchLabel extends StatelessWidget {
+  const _BranchLabel({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: .6,
+          ),
+        ),
+      ),
     );
   }
 }

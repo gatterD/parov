@@ -164,6 +164,7 @@ class SteamSimulation extends ChangeNotifier {
       heaterThermalPowerKw * 3600 / _latentHeatKjPerKg;
   double get heaterDrainFlowKgPerHour => _heaterDrainRateKgPerHour;
   double get returnFlowKgPerHour => _trapFlowRateKgPerHour;
+  double get safetyValveDischargeKgPerHour => _safetyValveDischargeKgPerHour;
   double get returnFlow =>
       (_trapFlowRateKgPerHour / _condensateTrapCapacityKgPerHour * 100)
           .clamp(0, 100)
