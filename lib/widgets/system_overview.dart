@@ -11,13 +11,19 @@ class SystemOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final narrow = MediaQuery.sizeOf(context).width < 600;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 4, 18, 18),
+      padding: EdgeInsets.fromLTRB(
+        narrow ? 0 : 24,
+        4,
+        narrow ? 0 : 18,
+        narrow ? 8 : 18,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Схема системы',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
           const SizedBox(height: 5),
           const Text('Поток пара и возврат конденсата',
               style: TextStyle(color: AppColors.muted, fontSize: 13)),
@@ -30,7 +36,7 @@ class SystemOverview extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white.withValues(alpha: .06)),
               ),
-              padding: const EdgeInsets.all(18),
+              padding: EdgeInsets.all(narrow ? 10 : 18),
               child: LayoutBuilder(
                 builder: (context, constraints) => constraints.maxWidth > 680
                     ? _HorizontalDiagram(simulation: simulation)
@@ -39,48 +45,91 @@ class SystemOverview extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          const Wrap(
-            spacing: 18,
-            runSpacing: 8,
-            children: [
-              _Legend(color: AppColors.steam, label: 'Пар'),
-              _Legend(color: AppColors.water, label: 'Конденсат'),
-              _Legend(color: AppColors.danger, label: 'Сброс давления'),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: const Row(
+              children: [
+                _Legend(color: AppColors.steam, label: 'Пар'),
+                SizedBox(width: 18),
+                _Legend(color: AppColors.water, label: 'Конденсат'),
+                SizedBox(width: 18),
+                _Legend(color: AppColors.danger, label: 'Сброс давления'),
+              ],
+            ),
           ),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _Metric(
-                  title: 'КОТЁЛ',
-                  value: simulation.boilerPressure.toStringAsFixed(1),
-                  unit: 'бар',
-                  color: simulation.safetyValveOpen
-                      ? AppColors.danger
-                      : AppColors.steam,
+          narrow
+              ? SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 125,
+                        child: _Metric(
+                          title: 'КОТЁЛ',
+                          value: simulation.boilerPressure.toStringAsFixed(1),
+                          unit: 'бар',
+                          color: simulation.safetyValveOpen
+                              ? AppColors.danger
+                              : AppColors.steam,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 125,
+                        child: _Metric(
+                          title: 'МАГИСТРАЛЬ',
+                          value: simulation.workingPressure.toStringAsFixed(1),
+                          unit: 'бар',
+                          color: AppColors.steam,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 125,
+                        child: _Metric(
+                          title: 'ГРЕЛКИ',
+                          value:
+                              simulation.heaterTemperature.toStringAsFixed(0),
+                          unit: '°C',
+                          color: AppColors.water,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: _Metric(
+                        title: 'КОТЁЛ',
+                        value: simulation.boilerPressure.toStringAsFixed(1),
+                        unit: 'бар',
+                        color: simulation.safetyValveOpen
+                            ? AppColors.danger
+                            : AppColors.steam,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _Metric(
+                        title: 'МАГИСТРАЛЬ',
+                        value: simulation.workingPressure.toStringAsFixed(1),
+                        unit: 'бар',
+                        color: AppColors.steam,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _Metric(
+                        title: 'ГРЕЛКИ',
+                        value: simulation.heaterTemperature.toStringAsFixed(0),
+                        unit: '°C',
+                        color: AppColors.water,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _Metric(
-                  title: 'МАГИСТРАЛЬ',
-                  value: simulation.workingPressure.toStringAsFixed(1),
-                  unit: 'бар',
-                  color: AppColors.steam,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _Metric(
-                  title: 'ГРЕЛКИ',
-                  value: simulation.heaterTemperature.toStringAsFixed(0),
-                  unit: '°C',
-                  color: AppColors.water,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -557,13 +606,13 @@ class _ProcessNode extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 5),
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.muted, fontSize: 10),
+            style: const TextStyle(color: Color(0xFFC1CCCB), fontSize: 11),
           ),
         ],
       ),
@@ -686,17 +735,14 @@ class _VerticalStage extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w700),
+                      fontSize: 13, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppColors.muted, fontSize: 10),
+                  style:
+                      const TextStyle(color: Color(0xFFC1CCCB), fontSize: 12),
                 ),
               ],
             ),

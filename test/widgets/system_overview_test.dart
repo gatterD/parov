@@ -4,7 +4,7 @@ import 'package:parov/models/steam_simulation.dart';
 import 'package:parov/widgets/system_overview.dart';
 
 void main() {
-  testWidgets('horizontal diagram rows scroll independently without overflow',
+  testWidgets('horizontal diagram rows and legend scroll without overflow',
       (tester) async {
     tester.view.physicalSize = const Size(1030, 768);
     tester.view.devicePixelRatio = 1;
@@ -28,7 +28,7 @@ void main() {
           widget.scrollDirection == Axis.horizontal,
     );
 
-    expect(horizontalScrollViews, findsNWidgets(3));
+    expect(horizontalScrollViews, findsNWidgets(4));
     expect(tester.takeException(), isNull);
   });
 }

@@ -10,13 +10,21 @@ class SimulationControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final narrow = MediaQuery.sizeOf(context).width < 600;
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(left: BorderSide(color: Colors.white10)),
       ),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+        shrinkWrap: narrow,
+        physics: narrow ? const NeverScrollableScrollPhysics() : null,
+        padding: EdgeInsets.fromLTRB(
+          narrow ? 16 : 20,
+          narrow ? 16 : 20,
+          narrow ? 16 : 20,
+          narrow ? 24 : 22,
+        ),
         children: [
           Row(
             children: [
@@ -46,6 +54,7 @@ class SimulationControls extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.steam,
                     foregroundColor: const Color(0xFF18201F),
+                    minimumSize: const Size.fromHeight(48),
                     padding: const EdgeInsets.symmetric(vertical: 13),
                   ),
                 ),
@@ -299,27 +308,35 @@ class _ParameterSlider extends StatelessWidget {
           children: [
             Expanded(
               child: Text(label,
-                  style: const TextStyle(color: AppColors.muted, fontSize: 11)),
+                  style: const TextStyle(
+                      color: Color(0xFFD0DAD9),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600)),
             ),
             const SizedBox(width: 8),
             Text(displayValue,
-                style:
-                    const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.steam,
+                    fontWeight: FontWeight.w800)),
           ],
         ),
-        Slider(
-          value: value.clamp(min, max),
-          min: min,
-          max: max,
-          divisions: divisions,
-          onChanged: onChanged,
+        SizedBox(
+          height: 44,
+          child: Slider(
+            value: value.clamp(min, max),
+            min: min,
+            max: max,
+            divisions: divisions,
+            onChanged: onChanged,
+          ),
         ),
         if (description != null)
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
               description!,
-              style: const TextStyle(color: AppColors.muted, fontSize: 10),
+              style: const TextStyle(color: Color(0xFFC1CCCB), fontSize: 12),
             ),
           ),
       ],

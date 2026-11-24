@@ -25,7 +25,9 @@ abstract final class AppTheme {
       inactiveTrackColor: Colors.white12,
       thumbColor: AppColors.steam,
       overlayColor: AppColors.steam.withValues(alpha: .12),
-      trackHeight: 3,
+      trackHeight: 5,
+      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 11),
+      overlayShape: const RoundSliderOverlayShape(overlayRadius: 22),
     ),
     useMaterial3: true,
   );

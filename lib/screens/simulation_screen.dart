@@ -47,9 +47,9 @@ class _SimulationScreenState extends State<SimulationScreen> {
                               ],
                             )
                           : ListView(
-                              padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                               children: [
-                                SizedBox(height: 535, child: overview),
+                                SizedBox(height: 680, child: overview),
                                 const SizedBox(height: 16),
                                 controls,
                               ],
@@ -66,46 +66,60 @@ class _SimulationScreenState extends State<SimulationScreen> {
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.steam.withValues(alpha: .12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.device_thermostat, color: AppColors.steam),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 600;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            compact ? 16 : 24,
+            compact ? 10 : 18,
+            compact ? 16 : 24,
+            compact ? 10 : 18,
           ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ПАРОВОЕ ОТОПЛЕНИЕ',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.1,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                width: compact ? 34 : 38,
+                height: compact ? 34 : 38,
+                decoration: BoxDecoration(
+                  color: AppColors.steam.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                SizedBox(height: 3),
-                Text(
-                  'Однопроводная система · вариант 6',
-                  style: TextStyle(color: AppColors.muted, fontSize: 12),
+                child:
+                    const Icon(Icons.device_thermostat, color: AppColors.steam),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ПАРОВОЕ ОТОПЛЕНИЕ',
+                      style: TextStyle(
+                        fontSize: compact ? 13 : 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: compact ? .4 : 1.1,
+                      ),
+                    ),
+                    if (!compact) ...[
+                      SizedBox(height: 3),
+                      Text(
+                        'Однопроводная система · вариант 6',
+                        style: TextStyle(color: AppColors.muted, fontSize: 12),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-            ),
+              ),
+              StatusTag(
+                label: _simulation.isRunning ? 'СИМУЛЯЦИЯ' : 'ОЖИДАНИЕ',
+                color:
+                    _simulation.isRunning ? AppColors.water : AppColors.muted,
+              ),
+            ],
           ),
-          StatusTag(
-            label: _simulation.isRunning ? 'СИМУЛЯЦИЯ' : 'ОЖИДАНИЕ',
-            color: _simulation.isRunning ? AppColors.water : AppColors.muted,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
